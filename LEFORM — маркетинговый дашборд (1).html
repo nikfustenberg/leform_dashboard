@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LEFORM — маркетинговый дашборд</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#fff;--tx:#111;--mut:#6b6b6b;--bd:#6e6e6e;--or:#ee4c14;--ov:#d9531e;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 Roboto,-apple-system,"Segoe UI",Arial,sans-serif;padding:16px}
+h1{font-size:20px;margin:0 0 2px}
+.sub{color:var(--mut);font-size:12px;margin-bottom:14px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.tabs,.seg{display:flex;gap:4px;background:#fff;border:2px solid var(--bd);border-radius:14px;padding:3px}
+button{font:inherit;border:0;background:none;color:var(--tx);padding:6px 12px;border-radius:10px;cursor:pointer}
+button.on{background:var(--or);color:#fff}
+button:disabled{opacity:.35;cursor:not-allowed}
+label{color:var(--mut);font-size:12px;display:flex;align-items:center;gap:6px}
+input[type=date]{font:inherit;color:var(--tx);background:#fff;border:2px solid var(--bd);border-radius:10px;padding:4px 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.card,.cl{background:#fff;border:2px solid var(--bd);border-radius:18px;color:var(--tx)}
+.card{padding:12px 14px 16px;text-align:center;min-height:110px;display:flex;flex-direction:column}
+.card .l{font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+.card .v{font-size:28px;font-weight:600;color:var(--ov);margin:auto 0;padding-top:8px;line-height:1.2}
+.card .v.nd{color:var(--mut);font-size:16px;font-weight:400}
+.card .cp{font-size:11px;margin-top:6px;min-height:14px}
+.cl{grid-column:1/-1;padding:14px 16px}
+.cl h3{margin:0 0 10px;font-size:14px;letter-spacing:.02em;text-transform:uppercase}
+.cl .row{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.cl .dn{position:relative;width:240px;height:240px}
+.cl .br{position:relative;flex:1;min-width:260px;height:240px}
+.cl .lg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#444;margin-top:8px}
+.cl .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.tr{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.tr .cl{grid-column:auto}
+.tr .cv{position:relative;height:200px}
+.tl{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+@media (min-width:1100px){.grid.one{grid-template-columns:repeat(var(--n),minmax(0,1fr))}.grid.one .card{padding:12px 8px 16px}.grid.one .card .v{font-size:clamp(14px,1.1vw,26px)}.grid.one .card .l{font-size:10px;letter-spacing:0}}
+.note{color:var(--mut);font-size:12px;margin-top:14px}
+.gl{margin-top:14px;border:2px solid var(--bd);border-radius:18px;padding:10px 16px;background:#fff}
+.gl summary{cursor:pointer;font-weight:700;text-transform:uppercase;font-size:13px}
+.gl dl{margin:10px 0 0;display:grid;grid-template-columns:minmax(180px,280px) 1fr;gap:8px 16px;font-size:13px}
+.gl dt{font-weight:700}
+.gl dd{margin:0;color:#333}
+@media (max-width:700px){.gl dl{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<h1>LEFORM — маркетинговые каналы</h1>
+<div class="sub" id="upd"></div>
+<div class="bar">
+  <div class="tabs" id="tabs"></div>
+  <div class="seg" id="gran"></div>
+  <label>С <input type="date" id="from"></label>
+  <label>По <input type="date" id="to"></label>
+</div>
+<div class="grid" id="grid"></div>
+<div class="note">Значения — сумма за выбранный период; стрелка — изменение последнего периода к предыдущему (подписчики — значение на конец периода). Конверсии, CPO, CPOS, AOV и ДРР пересчитываются из базовых метрик.</div>
+<details class="gl"><summary>Справка: как читать дашборд</summary>
+<dl>
+<dt>Источники данных</dt><dd>Яндекс Директ — рекламный кабинет Директа; Email и SMS — Mindbox.</dd>
+<dt>Заказ / выкупленный заказ</dt><dd>Заказ — оформлен на сайте, может быть отменён или не выкуплен. Выкупленный заказ — получен и оплачен покупателем.</dd>
+<dt>Выручка</dt><dd>Считается по выкупленным заказам канала по его атрибуции. Для SMS — последний клик, окно 10 дней.</dd>
+<dt>Конверсия: клик → заказ</dt><dd>Заказы / клики.</dd>
+<dt>Конверсия: заказ → выкупленный заказ</dt><dd>Выкупленные заказы / заказы.</dd>
+<dt>Стоимость заказа (CPO)</dt><dd>Расход / заказы.</dd>
+<dt>Стоимость выкупленного заказа (CPOS)</dt><dd>Расход / выкупленные заказы. Показывает, во сколько обходится именно выкупленный заказ.</dd>
+<dt>Средний чек (AOV)</dt><dd>Выручка / выкупленные заказы.</dd>
+<dt>Доля рекламных расходов (ДРР)</dt><dd>Расход / выручка × 100%. Общий ДРР — суммарный расход Директа и SMS к их суммарной выручке.</dd>
+<dt>Подписчики</dt><dd>Размер базы на конец периода; прирост — изменение к предыдущему периоду.</dd>
+<dt>Новые и старые клиенты</dt><dd>Клиент — человек, совершивший покупку. Новым считается клиент, у которого последняя покупка в 2024 году или раньше (либо покупок не было); остальные — старые.</dd>
+<dt>Стрелка на плитке</dt><dd>Изменение последнего периода к предыдущему. Зелёная — улучшение, красная — ухудшение (для CPO, CPOS и ДРР улучшение — снижение).</dd>
+</dl></details>
+
+<script>
+// ===== ДАННЫЕ: сюда добавляются новые строки при каждом обновлении =====
+// d — дата начала периода, p — тип периода: 'd' день, 'w' неделя, 'm' месяц
+const UPDATED = 'Сентябрь 2026';
+const DATA = {
+  ydx:[{d:'2026-09-01',p:'m',spend:2097600,impr:1000000,clicks:437000,orders:619.3557031884308,newc:null,buy:300,rev:31672188}],
+  email:[{d:'2026-09-01',p:'m',sent:300000,deliv:240000,opens:100000,clicks:12000,subs:370500,orders:170.07479263755536,buy:60,rev:12330162.725391252}],
+  sms:[{d:'2026-09-01',p:'m',spend:1489351.111111111,sent:106382.22222222222,deliv:90000,clicks:60000,subs:169800,orders:400,buy:200,rev:8141162}]
+};
+// ДЕМО-история апрель–август: плавный рост к сентябрю (удалить, когда появятся реальные данные)
+const F=[.62,.70,.79,.88,.94],SF=[1.12,1.09,1.06,1.03,1.01],RF=[.96,.97,.98,.99,.995],UF=[.80,.85,.90,.94,.97];
+Object.values(DATA).forEach(arr=>{
+  const b=arr[0],h=[];
+  for(let i=0;i<5;i++){
+    const r={d:'2026-0'+(4+i)+'-01',p:'m',demo:1};
+    Object.keys(b).forEach(k=>{
+      if(k==='d'||k==='p')return;
+      const v=b[k];
+      r[k]=v==null?null:Math.round(k==='spend'?v*F[i]*SF[i]:k==='rev'?v*F[i]*RF[i]:k==='subs'?v*UF[i]:v*F[i]);
+    });
+    h.push(r);
+  }
+  arr.unshift(...h);
+});
+// ДЕМО-данные: новые и старые клиенты в заказах (в выгрузке этой разбивки нет). Итог за период: 65% новых / 35% старых
+const CL={
+  ydx:[['2026-04-01',190,120],['2026-05-01',205,115],['2026-06-01',220,125],['2026-07-01',215,110],['2026-08-01',235,115],['2026-09-01',235,115]].map(([d,n,o])=>({d,new:n,old:o})),
+  email:[['2026-04-01',100,55],['2026-05-01',105,60],['2026-06-01',110,60],['2026-07-01',115,55],['2026-08-01',110,60],['2026-09-01',110,60]].map(([d,n,o])=>({d,new:n,old:o})),
+  sms:[['2026-04-01',75,40],['2026-05-01',80,45],['2026-06-01',90,50],['2026-07-01',90,45],['2026-08-01',95,50],['2026-09-01',90,50]].map(([d,n,o])=>({d,new:n,old:o}))
+};
+// формат метрики: [ключ, название, тип, формула для производных]
+const RUB='rub',PCT='pct';
+const CH={
+ all:{n:'Сводка',m:[]},
+ ydx:{n:'Яндекс Директ',m:[['spend','Расход',RUB],['rev','Выручка',RUB],['clicks','Клики'],['cr','Конверсия: клик → заказ',PCT,a=>a.orders/a.clicks],['orders','Заказы'],['crb','Конверсия: заказ → выкупленный заказ',PCT,a=>a.buy/a.orders],['buy','Выкупленные заказы'],['cpo','Стоимость заказа (CPO)',RUB,a=>a.spend/a.orders],['cpos','Стоимость выкупленного заказа (CPOS)',RUB,a=>a.spend/a.buy],['aov','Средний чек (AOV)',RUB,a=>a.rev/a.buy],['drr','Доля рекламных расходов (ДРР)',PCT,a=>a.spend/a.rev]]},
+ email:{n:'Email',m:[['subs','Подписчики email'],['clicks','Клики'],['cr','Конверсия: клик → заказ',PCT,a=>a.orders/a.clicks],['orders','Заказы'],['buy','Выкупленные заказы'],['aov','Средний чек (AOV)',RUB,a=>a.rev/a.buy],['rev','Выручка',RUB]]},
+ sms:{n:'SMS',m:[['spend','Расход',RUB],['subs','Подписчики SMS'],['cr','Конверсия: клик → заказ',PCT,a=>a.orders/a.clicks],['orders','Заказы'],['buy','Выкупленные заказы'],['cpo','Стоимость заказа (CPO)',RUB,a=>a.spend/a.orders],['cpos','Стоимость выкупленного заказа (CPOS)',RUB,a=>a.spend/a.buy],['aov','Средний чек (AOV)',RUB,a=>a.rev/a.buy],['rev','Выручка',RUB],['drr','Доля рекламных расходов (ДРР)',PCT,a=>a.spend/a.rev]]}
+};
+const LAST=['subs'];
+const MN=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const S={ch:'all',g:'m',from:'',to:''};
+
+const all=()=>Object.values(DATA).flat();
+const fine=()=>all().some(r=>r.p==='d')?'d':all().some(r=>r.p==='w')?'w':'m';
+const dt=s=>new Date(s+'T00:00:00Z');
+const iso=d=>d.toISOString().slice(0,10);
+function key(r,g){
+  if(g==='d') return r.d;
+  if(g==='w'){const d=dt(r.d);const k=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-k);return iso(d)}
+  return r.d.slice(0,7);
+}
+function label(k,g){
+  if(g==='m'){const[y,m]=k.split('-');return MN[+m-1]+' '+y}
+  const[y,m,d]=k.split('-');return (g==='w'?'нед. ':'')+d+'.'+m+'.'+y.slice(2);
+}
+function inRange(r){
+  const lo=r.p==='m'?S.from.slice(0,7)+'-01':S.from;
+  return r.d>=lo&&r.d<=S.to;
+}
+function agg(rows,spec){
+  const a={};
+  rows.forEach(r=>Object.keys(r).forEach(k=>{
+    if(k==='d'||k==='p'||k==='demo')return;
+    if(LAST.includes(k)){if(r[k]!=null)a[k]=r[k]}
+    else if(r[k]!=null)a[k]=(a[k]||0)+r[k];
+  }));
+  const o={};
+  spec.forEach(([k,,,f])=>{o[k]=f?(isFinite(f(a))?f(a):null):(a[k]!=null?a[k]:null)});
+  return o;
+}
+function fmt(v,t){
+  if(v==null||isNaN(v))return '—';
+  if(t===PCT)return (v*100).toLocaleString('ru-RU',{maximumFractionDigits:Math.abs(v)<0.1?2:1})+'%';
+  const s=Math.round(v).toLocaleString('ru-RU');
+  return t===RUB?s+' ₽':s;
+}
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+
+let charts=[];
+function clientsCard(grid){
+  const lo=S.from.slice(0,7)+'-01';
+  const rows=(CL[S.ch]||[]).filter(r=>r.d>=lo&&r.d<=S.to).sort((a,b)=>a.d<b.d?-1:1);
+  const nw=rows.reduce((s,r)=>s+r.new,0),od=rows.reduce((s,r)=>s+r.old,0),tot=nw+od;
+  const pn=tot?Math.round(nw/tot*100):0;
+  const c=document.createElement('div');c.className='cl';
+  c.innerHTML='<h3>Новые и старые клиенты в заказах</h3><div class="row"><div class="dn"><canvas></canvas></div><div class="br"><canvas></canvas></div></div><div class="lg"><span><i class="dot" style="background:#ee4c14"></i>Новые клиенты '+pn+'%</span><span><i class="dot" style="background:#8a8a8a"></i>Старые клиенты '+(tot?100-pn:0)+'%</span></div>';
+  grid.appendChild(c);
+  if(!tot)return;
+  const cv=c.querySelectorAll('canvas');
+  charts.push(new Chart(cv[0],{type:'doughnut',data:{labels:['Новые','Старые'],datasets:[{data:[nw,od],backgroundColor:['#ee4c14','#8a8a8a'],borderColor:'#ffffff',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}},plugins:[{id:'ct',afterDraw(ch){const ctx=ch.ctx,a=ch.chartArea;ctx.save();ctx.fillStyle='#111';ctx.font='600 24px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pn+'%',(a.left+a.right)/2,(a.top+a.bottom)/2);ctx.restore()}}]}));
+  charts.push(new Chart(cv[1],{type:'bar',data:{labels:rows.map(r=>label(r.d.slice(0,7),'m')),datasets:[{label:'Новые',data:rows.map(r=>r.new),backgroundColor:'#ee4c14',borderRadius:4},{label:'Старые',data:rows.map(r=>r.old),backgroundColor:'#8a8a8a',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555555'},grid:{display:false}},y:{beginAtZero:true,ticks:{color:'#555555'},grid:{color:'#e3e3e3'}}}}}));
+}
+function bucket(rows,spec){
+  const g={};
+  rows.forEach(r=>{(g[key(r,S.g)]=g[key(r,S.g)]||[]).push(r)});
+  const ks=Object.keys(g).sort();
+  return {ks,ser:ks.map(k=>agg(g[k],spec))};
+}
+const LOW=['cpo','cpos','drr'];
+function cmpHtml(k,full){
+  const n=full.ks.length;
+  if(n<2)return '<div class="cp"></div>';
+  const a=full.ser[n-1][k],b=full.ser[n-2][k];
+  if(a==null||b==null||!b)return '<div class="cp"></div>';
+  const p=(a/b-1)*100,up=p>=0;
+  const good=k==='spend'?null:(LOW.includes(k)?!up:up);
+  const c=good==null?'#6b6b6b':good?'#2e9b3a':'#e5483b';
+  return '<div class="cp" style="color:'+c+'">'+(up?'▲ ':'▼ ')+Math.abs(p).toLocaleString('ru-RU',{maximumFractionDigits:1})+'% к '+label(full.ks[n-2],S.g)+'</div>';
+}
+const X=[['spend'],['rev'],['drr',0,0,a=>a.spend/a.rev],['buyr',0,0,a=>a.buy/a.orders],['subs'],['buy']];
+function extraCards(grid,rows,spec){
+  const has=k=>spec.some(m=>m[0]===k);
+  const cur=bucket(rows,X);
+  const full=bucket((DATA[S.ch]||[]).filter(r=>r.d<=S.to),X);
+  const gr={};
+  full.ks.forEach((k,i)=>{const a=full.ser[i].subs,b=i?full.ser[i-1].subs:null;gr[k]=(a!=null&&b!=null)?a-b:null});
+  const lb=cur.ks.map(x=>label(x,S.g));
+  const T='#555555',GR='#e3e3e3';
+  const lg=on=>({display:on,labels:{color:T,boxWidth:10}});
+  const xs={ticks:{color:T,maxTicksLimit:8},grid:{display:false}};
+  const ax=(pos,cb,own)=>({position:pos,beginAtZero:pos==='right',ticks:{color:T,callback:cb},grid:own?{drawOnChartArea:false}:{color:GR}});
+  const cmpt=v=>Intl.NumberFormat('ru-RU',{notation:'compact'}).format(v);
+  const pc=v=>(v*100).toFixed(0)+'%';
+  const tip={callbacks:{label:x=>x.dataset.label+': '+fmt(x.parsed.y,x.dataset.t)}};
+  const ds=(nm,f,color,extra)=>Object.assign({label:nm,data:cur.ser.map(f),borderColor:color,backgroundColor:color,borderWidth:2,pointRadius:4,tension:.3},extra);
+  const defs=[];
+  if(has('spend'))defs.push(['Расход, выручка и ДРР',{type:'line',data:{labels:lb,datasets:[ds('Расход',s=>s.spend,'#8a8a8a',{t:RUB,yAxisID:'y'}),ds('Выручка',s=>s.rev,'#ee4c14',{t:RUB,yAxisID:'y'}),ds('ДРР',s=>s.drr,'#f7a27c',{t:PCT,yAxisID:'y2',borderDash:[5,4]})]},options:{scales:{x:xs,y:ax('left',cmpt),y2:ax('right',pc,1)},plugins:{legend:lg(true),tooltip:tip}}}]);
+  defs.push(['Конверсия в выкупленный заказ',{type:'line',data:{labels:lb,datasets:[ds('Конверсия в выкупленный заказ',s=>s.buyr,'#444444',{t:PCT})]},options:{scales:{x:xs,y:ax('left',pc)},plugins:{legend:lg(false),tooltip:tip}}}]);
+  if(has('subs'))defs.push([spec.find(m=>m[0]==='subs')[1]+' и прирост',{type:'bar',data:{labels:lb,datasets:[{type:'bar',label:'Прирост',data:cur.ks.map(k=>gr[k]),backgroundColor:'#f7a27c',borderRadius:4,yAxisID:'y2',order:2},ds('Подписчики',s=>s.subs,'#ee4c14',{type:'line',yAxisID:'y',order:1})]},options:{scales:{x:xs,y:ax('left',cmpt),y2:ax('right',cmpt,1)},plugins:{legend:lg(true),tooltip:tip}}}]);
+  const wrap=document.createElement('div');wrap.className='tr';
+  const cvs=defs.map(d=>{const c=document.createElement('div');c.className='cl';c.innerHTML='<h3>'+d[0]+'</h3><div class="cv"><canvas></canvas></div>';wrap.appendChild(c);return c.querySelector('canvas')});
+  grid.appendChild(wrap);
+  defs.forEach((d,i)=>{charts.push(new Chart(cvs[i],{type:d[1].type,data:d[1].data,options:Object.assign({responsive:true,maintainAspectRatio:false},d[1].options)}))});
+}
+function summary(grid){
+  const chs=[['ydx','Яндекс Директ','#ee4c14'],['email','Email','#8a8a8a'],['sms','SMS','#f7a27c']];
+  const T='#555555',GR='#e3e3e3';
+  const d=chs.map(c=>agg((DATA[c[0]]||[]).filter(inRange),X));
+  const sum=f=>d.reduce((s,x)=>s+(x[f]||0),0);
+  const paid=d.filter(x=>x.spend!=null);
+  const ps=paid.reduce((s,x)=>s+x.spend,0),pr=paid.reduce((s,x)=>s+(x.rev||0),0),pb=paid.reduce((s,x)=>s+(x.buy||0),0);
+  const tl=document.createElement('div');tl.className='tl';
+  [['Выручка, все каналы',sum('rev'),RUB],['Расход, Директ и SMS',ps,RUB],['Выкупленные заказы, все каналы',sum('buy')],['Стоимость выкупленного заказа (CPOS), Директ и SMS',pb?ps/pb:null,RUB],['Общий ДРР, Директ и SMS',pr?ps/pr:null,PCT],['Средний чек (AOV), все каналы',sum('buy')?sum('rev')/sum('buy'):null,RUB]].forEach(([n,v,t])=>{
+    const c=document.createElement('div');c.className='card';
+    c.innerHTML='<div class="l">'+n+'</div><div class="v">'+fmt(v,t)+'</div>';
+    tl.appendChild(c);
+  });
+  grid.appendChild(tl);
+  const wrap=document.createElement('div');wrap.className='tr';
+  const mk=t=>{const c=document.createElement('div');c.className='cl';c.innerHTML='<h3>'+t+'</h3><div class="cv"><canvas></canvas></div>';wrap.appendChild(c);return c.querySelector('canvas')};
+  const c1=mk('Доля каналов в выручке'),c2=mk('Расход и выручка по каналам'),c3=mk('ДРР по каналам и общий ДРР');
+  grid.appendChild(wrap);
+  const base={responsive:true,maintainAspectRatio:false};
+  const names=chs.map(c=>c[1]),cols=chs.map(c=>c[2]);
+  const rev=d.map(x=>x.rev),tot=rev.reduce((s,v)=>s+(v||0),0);
+  const cmpt=v=>Intl.NumberFormat('ru-RU',{notation:'compact'}).format(v);
+  const xs={ticks:{color:T},grid:{display:false}};
+  charts.push(new Chart(c1,{type:'doughnut',data:{labels:names,datasets:[{data:rev,backgroundColor:cols,borderColor:'#ffffff',borderWidth:2}]},options:Object.assign({cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:T,boxWidth:10}},tooltip:{callbacks:{label:x=>x.label+': '+fmt(x.parsed,RUB)+' ('+(tot?Math.round(x.parsed/tot*100):0)+'%)'}}}},base)}));
+  charts.push(new Chart(c2,{type:'bar',data:{labels:names,datasets:[{label:'Расход',data:d.map(x=>x.spend),backgroundColor:'#8a8a8a',borderRadius:4},{label:'Выручка',data:rev,backgroundColor:'#ee4c14',borderRadius:4}]},options:Object.assign({plugins:{legend:{labels:{color:T,boxWidth:10}},tooltip:{callbacks:{label:x=>x.dataset.label+': '+fmt(x.parsed.y,RUB)}}},scales:{x:xs,y:{beginAtZero:true,ticks:{color:T,callback:cmpt},grid:{color:GR}}}},base)}));
+  const ix=chs.map((c,i)=>i).filter(i=>d[i].drr!=null);
+  charts.push(new Chart(c3,{type:'bar',data:{labels:ix.map(i=>names[i]).concat(['Итого']),datasets:[{data:ix.map(i=>d[i].drr).concat([pr?ps/pr:null]),backgroundColor:ix.map(i=>cols[i]).concat(['#111111']),borderRadius:4,maxBarThickness:70}]},options:Object.assign({plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>'ДРР: '+fmt(x.parsed.y,PCT)}}},scales:{x:xs,y:{beginAtZero:true,ticks:{color:T,callback:v=>(v*100).toFixed(0)+'%'},grid:{color:GR}}}},base)}));
+}
+function trendCards(grid,rows,spec){
+  const g={};
+  rows.forEach(r=>{(g[key(r,S.g)]=g[key(r,S.g)]||[]).push(r)});
+  const ks=Object.keys(g).sort();
+  const ser=ks.map(k=>agg(g[k],spec));
+  const defs=[['buy','Выкупленные заказы','#f7a27c'],['cpos','Стоимость выкупленного заказа (CPOS)','#8a8a8a'],['rev','Выручка','#ee4c14']].filter(d=>spec.some(m=>m[0]===d[0]));
+  const wrap=document.createElement('div');wrap.className='tr';
+  const cvs=[];
+  defs.forEach(([k,n])=>{const c=document.createElement('div');c.className='cl';c.innerHTML='<h3>'+n+'</h3><div class="cv"><canvas></canvas></div>';wrap.appendChild(c);cvs.push(c.querySelector('canvas'))});
+  grid.appendChild(wrap);
+  defs.forEach(([k,n,col],i)=>{
+    const t=spec.find(m=>m[0]===k)[2];
+    charts.push(new Chart(cvs[i],{type:'line',data:{labels:ks.map(x=>label(x,S.g)),datasets:[{data:ser.map(s=>s[k]),borderColor:col,backgroundColor:col,borderWidth:2,pointRadius:5,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>fmt(x.parsed.y,t)}}},scales:{x:{ticks:{color:'#555555',maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:'#555555',callback:v=>Intl.NumberFormat('ru-RU',{notation:'compact'}).format(v)},grid:{color:'#e3e3e3'}}}}}));
+  });
+}
+function render(){
+  charts.forEach(c=>c.destroy());charts=[];
+  const spec=CH[S.ch].m;
+  const rows=(DATA[S.ch]||[]).filter(inRange).sort((a,b)=>a.d<b.d?-1:1);
+  const total=agg(rows,spec);
+  const fullT=bucket((DATA[S.ch]||[]).filter(r=>r.d<=S.to),spec);
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  grid.className=S.ch==='all'?'grid':'grid one';
+  grid.style.setProperty('--n',spec.length||1);
+  if(S.ch==='all'){summary(grid);return}
+  spec.forEach(([k,name,t])=>{
+    const v=total[k];
+    const c=document.createElement('div');c.className='card';
+    c.innerHTML='<div class="l">'+name+'</div><div class="v'+(v==null?' nd':'')+'">'+(v==null?'нет данных':fmt(v,t))+'</div>'+cmpHtml(k,fullT);
+    grid.appendChild(c);
+  });
+  if(S.ch==='ydx')clientsCard(grid);
+  trendCards(grid,rows,spec);
+  extraCards(grid,rows,spec);
+}
+
+function build(){
+  const tabs=document.getElementById('tabs');
+  tabs.innerHTML='';
+  Object.keys(CH).forEach(k=>{
+    const b=document.createElement('button');b.textContent=CH[k].n;b.className=k===S.ch?'on':'';
+    b.onclick=()=>{S.ch=k;build();render()};tabs.appendChild(b);
+  });
+  const gr=document.getElementById('gran');gr.innerHTML='';
+  const f=fine();
+  [['d','День'],['w','Неделя'],['m','Месяц']].forEach(([g,n])=>{
+    const b=document.createElement('button');b.textContent=n;b.className=g===S.g?'on':'';
+    b.disabled=(g==='d'&&f!=='d')||(g==='w'&&f==='m');
+    b.title=b.disabled?'Для этой детализации нужна выгрузка по дням/неделям':'';
+    b.onclick=()=>{S.g=g;build();render()};gr.appendChild(b);
+  });
+}
+function init(){
+  const ds=all().concat(...Object.values(CL)).map(r=>r.d).sort();
+  S.from=ds[0];S.to=ds[ds.length-1];
+  // конец периода для месячной записи — конец месяца
+  const last=all().filter(r=>r.d===S.to)[0];
+  if(last&&last.p==='m'){const d=dt(S.to);d.setUTCMonth(d.getUTCMonth()+1,0);S.to=iso(d)}
+  const f=document.getElementById('from'),t=document.getElementById('to');
+  f.value=S.from;t.value=S.to;
+  f.onchange=()=>{S.from=f.value;render()};
+  t.onchange=()=>{S.to=t.value;render()};
+  document.getElementById('upd').textContent='Данные обновлены: '+UPDATED;
+  build();render();
+}
+init();
+</script>
+</body>
+</html>
